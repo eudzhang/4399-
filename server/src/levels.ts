@@ -1,0 +1,1 @@
+import l1 from './levels/level1.json';import l2 from './levels/level2.json';import l3 from './levels/level3.json';import l4 from './levels/level4.json';import l5 from './levels/level5.json';import type {LevelData} from './types';export const levels=[l1,l2,l3,l4,l5] as LevelData[];

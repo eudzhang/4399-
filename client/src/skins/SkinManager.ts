@@ -1,0 +1,2 @@
+import Phaser from 'phaser';import {placeholderSkin} from './placeholder/skin';import type {Skin} from './types';
+export class SkinManager{constructor(public skin:Skin=placeholderSkin){} color(k:keyof Skin['colors']){return this.skin.colors[k]} rect(scene:Phaser.Scene,x:number,y:number,w:number,h:number,color:keyof Skin['colors']){return scene.add.rectangle(x+w/2,y+h/2,w,h,this.color(color)).setOrigin(.5)} }

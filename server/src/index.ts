@@ -1,0 +1,14 @@
+import path from 'node:path';import http from 'node:http';import express from 'express';import cors from 'cors';import {Server} from 'socket.io';import {RoomManager} from './rooms';import {updateRoom} from './gameLoop';import type {InputState} from './types';
+const app=express();app.use(cors());app.get('/health',(_req,res)=>res.json({ok:true}));const server=http.createServer(app);const io=new Server(server,{cors:{origin:true,credentials:true},pingTimeout:20_000});const rooms=new RoomManager();
+const broadcast=(code:string)=>{const room=rooms.rooms.get(code);if(room)io.to(code).emit('state',rooms.snapshot(room))};
+io.on('connection',socket=>{
+ socket.on('room:create',(ack:(v:unknown)=>void)=>{const {room,player}=rooms.create(socket.id);socket.join(room.code);ack({ok:true,roomCode:room.code,playerId:player.id,sessionId:player.sessionId,snapshot:rooms.snapshot(room)});broadcast(room.code)});
+ socket.on('room:join',({roomCode}:{roomCode:string},ack:(v:unknown)=>void)=>{try{const code=String(roomCode).trim();const {room,player}=rooms.join(code,socket.id);socket.join(code);ack({ok:true,roomCode:code,playerId:player.id,sessionId:player.sessionId,snapshot:rooms.snapshot(room)});broadcast(code)}catch(e){ack({ok:false,error:(e as Error).message})}});
+ socket.on('room:reconnect',({roomCode,sessionId}:{roomCode:string;sessionId:string},ack:(v:unknown)=>void)=>{const found=rooms.reconnect(roomCode,sessionId,socket.id);if(!found)return ack({ok:false});socket.join(roomCode);ack({ok:true,roomCode,playerId:found.player.id,sessionId,snapshot:rooms.snapshot(found.room)});broadcast(roomCode)});
+ socket.on('player:input',({roomCode,input}:{roomCode:string;input:InputState})=>{const room=rooms.rooms.get(roomCode);const p=room&&[...room.players.values()].find(x=>x.socketId===socket.id);if(p)p.input={left:!!input.left,right:!!input.right,jump:!!input.jump}});
+ socket.on('game:restart',({roomCode}:{roomCode:string})=>{const room=rooms.rooms.get(roomCode);if(room){room.level=0;room.complete=false;rooms.reset(room,false);broadcast(roomCode)}});
+ socket.on('room:leave',({roomCode}:{roomCode:string})=>{socket.leave(roomCode);const room=rooms.leave(roomCode,socket.id);if(room)broadcast(roomCode)});
+ socket.on('disconnect',()=>{const room=rooms.disconnect(socket.id);if(room)broadcast(room.code)});
+});
+let last=Date.now();setInterval(()=>{const now=Date.now(),dt=Math.min(.05,(now-last)/1000);last=now;for(const room of rooms.rooms.values()){updateRoom(rooms,room,dt);broadcast(room.code)}},40);
+if(process.env.NODE_ENV==='production'){const staticDir=path.resolve(__dirname,'../../client/dist');app.use(express.static(staticDir));app.get('*',(_req,res)=>res.sendFile(path.join(staticDir,'index.html')))}const port=Number(process.env.PORT)||3000;server.listen(port,'0.0.0.0',()=>console.log(`别丢下我 server: http://localhost:${port}`));

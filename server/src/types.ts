@@ -1,0 +1,4 @@
+export type PlayerId='p1'|'p2';export interface Rect{x:number;y:number;w:number;h:number}export interface Vec{x:number;y:number}export interface InputState{left:boolean;right:boolean;jump:boolean}
+export interface PlayerState extends Rect{id:PlayerId;vx:number;vy:number;onGround:boolean;connected:boolean;socketId:string;sessionId:string;input:InputState;atExit:boolean}
+export interface LevelData{id:string;name:string;spawn:Record<PlayerId,Vec>;platforms:Rect[];spikes:Rect[];buttons:(Rect&{id:string})[];doors:(Rect&{id:string;requires:{type:'button'|'key'|'allButtons';id?:string}})[];keys:(Rect&{id:string;opens:string})[];exit:Rect}
+export interface Room{code:string;players:Map<PlayerId,PlayerState>;level:number;buttons:Map<string,boolean>;doors:Map<string,boolean>;keys:Map<string,boolean>;latchedDoors:Set<string>;paused:boolean;complete:boolean;revision:number;resetMessage?:string;cleanupTimer?:NodeJS.Timeout}

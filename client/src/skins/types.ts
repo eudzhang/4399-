@@ -1,0 +1,1 @@
+export interface Skin{ name:string;mode:'graphics'|'sprites';colors:{background:number;player1:number;player2:number;platform:number;button:number;buttonPressed:number;door:number;spike:number;key:number;exit:number};assetKeys:Partial<Record<string,string>>;fallbackToGraphics:boolean}
